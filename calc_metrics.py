@@ -92,7 +92,6 @@ class CommaSeparatedList(click.ParamType):
 @click.option('--mirror', help='Whether the dataset was augmented with x-flips during training [default: look up]', type=bool, metavar='BOOL')
 @click.option('--gpus', help='Number of GPUs to use', type=int, default=1, metavar='INT', show_default=True)
 @click.option('--verbose', help='Print optional information', type=bool, default=True, metavar='BOOL', show_default=True)
-
 def calc_metrics(ctx, network_pkl, metrics, data, mirror, gpus, verbose):
     """Calculate quality metrics for previous training run or pretrained network pickle.
 
@@ -134,7 +133,7 @@ def calc_metrics(ctx, network_pkl, metrics, data, mirror, gpus, verbose):
     args = dnnlib.EasyDict(metrics=metrics, num_gpus=gpus, network_pkl=network_pkl, verbose=verbose)
     if not all(metric_main.is_valid_metric(metric) for metric in args.metrics):
         ctx.fail('\n'.join(['--metrics can only contain the following values:'] + metric_main.list_valid_metrics()))
-    if not args.num_gpus >= 1:
+    if args.num_gpus < 1:
         ctx.fail('--gpus must be at least 1')
 
     # Load network.

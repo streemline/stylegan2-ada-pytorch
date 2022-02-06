@@ -21,7 +21,7 @@ from . import inception_score
 
 #----------------------------------------------------------------------------
 
-_metric_dict = dict() # name => fn
+_metric_dict = {}
 
 def register_metric(fn):
     assert callable(fn)

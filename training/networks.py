@@ -496,8 +496,7 @@ class Generator(torch.nn.Module):
 
     def forward(self, z, c, truncation_psi=1, truncation_cutoff=None, **synthesis_kwargs):
         ws = self.mapping(z, c, truncation_psi=truncation_psi, truncation_cutoff=truncation_cutoff)
-        img = self.synthesis(ws, **synthesis_kwargs)
-        return img
+        return self.synthesis(ws, **synthesis_kwargs)
 
 #----------------------------------------------------------------------------
 
@@ -720,9 +719,7 @@ class Discriminator(torch.nn.Module):
             block = getattr(self, f'b{res}')
             x, img = block(x, img, **block_kwargs)
 
-        cmap = None
-        if self.c_dim > 0:
-            cmap = self.mapping(None, c)
+        cmap = self.mapping(None, c) if self.c_dim > 0 else None
         x = self.b4(x, img, cmap)
         return x
 
