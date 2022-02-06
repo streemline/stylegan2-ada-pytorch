@@ -26,8 +26,7 @@ def num_range(s: str) -> List[int]:
     '''Accept either a comma separated list of numbers 'a,b,c' or a range 'a-c' and return as a list of ints.'''
 
     range_re = re.compile(r'^(\d+)-(\d+)$')
-    m = range_re.match(s)
-    if m:
+    if m := range_re.match(s):
         return list(range(int(m.group(1)), int(m.group(2))+1))
     vals = s.split(',')
     return [int(x) for x in vals]
@@ -72,7 +71,7 @@ def generate_style_mix(
     all_w = G.mapping(torch.from_numpy(all_z).to(device), None)
     w_avg = G.mapping.w_avg
     all_w = w_avg + (all_w - w_avg) * truncation_psi
-    w_dict = {seed: w for seed, w in zip(all_seeds, list(all_w))}
+    w_dict = dict(zip(all_seeds, list(all_w)))
 
     print('Generating images...')
     all_images = G.synthesis(all_w, noise_mode=noise_mode)

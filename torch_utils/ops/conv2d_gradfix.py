@@ -63,7 +63,7 @@ def _tuple_of_ints(xs, ndim):
 
 #----------------------------------------------------------------------------
 
-_conv2d_gradfix_cache = dict()
+_conv2d_gradfix_cache = {}
 
 def _conv2d_gradfix(transpose, weight_shape, stride, padding, output_padding, dilation, groups):
     # Parse arguments.
@@ -119,21 +119,17 @@ def _conv2d_gradfix(transpose, weight_shape, stride, padding, output_padding, di
         def backward(ctx, grad_output):
             input, weight = ctx.saved_tensors
             grad_input = None
-            grad_weight = None
-            grad_bias = None
-
             if ctx.needs_input_grad[0]:
                 p = calc_output_padding(input_shape=input.shape, output_shape=grad_output.shape)
                 grad_input = _conv2d_gradfix(transpose=(not transpose), weight_shape=weight_shape, output_padding=p, **common_kwargs).apply(grad_output, weight, None)
                 assert grad_input.shape == input.shape
 
+            grad_weight = None
             if ctx.needs_input_grad[1] and not weight_gradients_disabled:
                 grad_weight = Conv2dGradWeight.apply(grad_output, input)
                 assert grad_weight.shape == weight_shape
 
-            if ctx.needs_input_grad[2]:
-                grad_bias = grad_output.sum([0, 2, 3])
-
+            grad_bias = grad_output.sum([0, 2, 3]) if ctx.needs_input_grad[2] else None
             return grad_input, grad_weight, grad_bias
 
     # Gradient with respect to the weights.

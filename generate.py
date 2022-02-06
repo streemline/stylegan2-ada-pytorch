@@ -26,8 +26,7 @@ def num_range(s: str) -> List[int]:
     '''Accept either a comma separated list of numbers 'a,b,c' or a range 'a-c' and return as a list of ints.'''
 
     range_re = re.compile(r'^(\d+)-(\d+)$')
-    m = range_re.match(s)
-    if m:
+    if m := range_re.match(s):
         return list(range(int(m.group(1)), int(m.group(2))+1))
     vals = s.split(',')
     return [int(x) for x in vals]
@@ -108,9 +107,8 @@ def generate_images(
         if class_idx is None:
             ctx.fail('Must specify class label with --class when using a conditional network')
         label[:, class_idx] = 1
-    else:
-        if class_idx is not None:
-            print ('warn: --class=lbl ignored when running on an unconditional network')
+    elif class_idx is not None:
+        print ('warn: --class=lbl ignored when running on an unconditional network')
 
     # Generate images.
     for seed_idx, seed in enumerate(seeds):

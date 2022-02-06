@@ -37,17 +37,24 @@ def _conv2d_wrapper(x, w, stride=1, padding=0, groups=1, transpose=False, flip_w
 
     # Workaround performance pitfall in cuDNN 8.0.5, triggered when using
     # 1x1 kernel + memory_format=channels_last + less than 64 channels.
-    if kw == 1 and kh == 1 and stride == 1 and padding in [0, [0, 0], (0, 0)] and not transpose:
-        if x.stride()[1] == 1 and min(out_channels, in_channels_per_group) < 64:
-            if out_channels <= 4 and groups == 1:
-                in_shape = x.shape
-                x = w.squeeze(3).squeeze(2) @ x.reshape([in_shape[0], in_channels_per_group, -1])
-                x = x.reshape([in_shape[0], out_channels, in_shape[2], in_shape[3]])
-            else:
-                x = x.to(memory_format=torch.contiguous_format)
-                w = w.to(memory_format=torch.contiguous_format)
-                x = conv2d_gradfix.conv2d(x, w, groups=groups)
-            return x.to(memory_format=torch.channels_last)
+    if (
+        kw == 1
+        and kh == 1
+        and stride == 1
+        and padding in [0, [0, 0], (0, 0)]
+        and not transpose
+        and x.stride()[1] == 1
+        and min(out_channels, in_channels_per_group) < 64
+    ):
+        if out_channels <= 4 and groups == 1:
+            in_shape = x.shape
+            x = w.squeeze(3).squeeze(2) @ x.reshape([in_shape[0], in_channels_per_group, -1])
+            x = x.reshape([in_shape[0], out_channels, in_shape[2], in_shape[3]])
+        else:
+            x = x.to(memory_format=torch.contiguous_format)
+            w = w.to(memory_format=torch.contiguous_format)
+            x = conv2d_gradfix.conv2d(x, w, groups=groups)
+        return x.to(memory_format=torch.channels_last)
 
     # Otherwise => execute using conv2d_gradfix.
     op = conv2d_gradfix.conv_transpose2d if transpose else conv2d_gradfix.conv2d
@@ -142,9 +149,15 @@ def conv2d_resample(x, w, f=None, up=1, down=1, padding=0, groups=1, flip_weight
         return x
 
     # Fast path: no up/downsampling, padding supported by the underlying implementation => use plain conv2d.
-    if up == 1 and down == 1:
-        if px0 == px1 and py0 == py1 and px0 >= 0 and py0 >= 0:
-            return _conv2d_wrapper(x=x, w=w, padding=[py0,px0], groups=groups, flip_weight=flip_weight)
+    if (
+        up == 1
+        and down == 1
+        and px0 == px1
+        and py0 == py1
+        and px0 >= 0
+        and py0 >= 0
+    ):
+        return _conv2d_wrapper(x=x, w=w, padding=[py0,px0], groups=groups, flip_weight=flip_weight)
 
     # Fallback: Generic reference implementation.
     x = upfirdn2d.upfirdn2d(x=x, f=(f if up > 1 else None), up=up, padding=[px0,px1,py0,py1], gain=up**2, flip_filter=flip_filter)
